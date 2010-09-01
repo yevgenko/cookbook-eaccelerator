@@ -17,24 +17,20 @@ remote_file "#{Chef::Config[:file_cache_path]}/eaccelerator.tar.bz2" do
   mode "0644"
 end
 
-directory "#{Chef::Config[:file_cache_path]}/eaccelerator" do
-  action :create
-end
-
-bash "compiling & installing eAccelerator" do
-  cwd "#{Chef::Config[:file_cache_path]}/eaccelerator"
+bash "build eAccelerator" do
+  cwd "#{Chef::Config[:file_cache_path]}"
   code <<-EOH
+mkdir eaccelerator
+cd eaccelerator
 tar --strip-components 1 -xjf #{Chef::Config[:file_cache_path]}/eaccelerator.tar.bz2
 phpize
 ./configure
 make
 make install
+cd ..
+rm -rf eaccelerator
 EOH
-end
-
-directory "#{Chef::Config[:file_cache_path]}/eaccelerator" do
-  recursive true
-  action :delete
+  action :nothing
 end
 
 directory "#{node[:php][:eaccelerator][:cache_dir]}" do
@@ -50,4 +46,5 @@ template "#{node[:php][:conf_dir]}/eaccelerator.ini" do
   group  "root"
   mode   "0644"
   backup false
+  notifies :run, resources(:bash => "build eAccelerator"), :immediately
 end
